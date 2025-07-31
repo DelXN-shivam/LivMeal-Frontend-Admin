@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Plus, CheckCircle, XCircle } from "lucide-react"
 import toast from "react-hot-toast"
 import MessCard from "@/components/MessCard"
@@ -10,11 +10,15 @@ export default function MessPage() {
   const [activeTab, setActiveTab] = useState("messList")
   const [messList, setMessList] = useState([])
   const [loading, setLoading] = useState(false)
+  const hasFetched = useRef(false)
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL // Ensure this environment variable is set
 
   // Fetch mess data on component mount
   useEffect(() => {
-    fetchMess()
+    if (!hasFetched.current) {
+      hasFetched.current = true
+      fetchMess()
+    }
   }, [])
 
   const fetchMess = async () => {
@@ -94,12 +98,12 @@ export default function MessPage() {
           prevList.map((mess) =>
             mess._id === id // Use _id for comparison
               ? {
-                  ...mess,
-                  isVerified: newStatus,
-                  // Optionally update rating or rejectionReason based on action
-                  rating: action === "accept" ? mess.rating || 4.0 : mess.rating, // Set default rating if accepted
-                  rejectionReason: action === "reject" ? "Application rejected by admin" : null,
-                }
+                ...mess,
+                isVerified: newStatus,
+                // Optionally update rating or rejectionReason based on action
+                rating: action === "accept" ? mess.rating || 4.0 : mess.rating, // Set default rating if accepted
+                rejectionReason: action === "reject" ? "Application rejected by admin" : null,
+              }
               : mess,
           ),
         )
@@ -185,7 +189,7 @@ export default function MessPage() {
               )}
               Refresh
             </button>
-            
+
           </div>
         </div>
         {/* Tabs */}
