@@ -1,39 +1,166 @@
 "use client"
 
-import { useState } from "react"
-import { MapPin, Star, User, Plus, CheckCircle, XCircle, Eye } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Plus, CheckCircle, XCircle } from "lucide-react"
+import toast from "react-hot-toast"
+import MessCard from "@/components/MessCard"
+import axios from "axios"
 
 export default function MessPage() {
   const [activeTab, setActiveTab] = useState("messList")
-  const [messList, setMessList] = useState([
-    { id: 1, name: "University Main Mess", location: "Campus Block A", status: "verified", rating: 4.5 },
-    { id: 2, name: "North Campus Cafeteria", location: "North Dormitory", status: "verified", rating: 4.2 },
-    { id: 3, name: "South Campus Food Court", location: "South Dormitory", status: "verified", rating: 3.9 },
-  ])
+  const [messList, setMessList] = useState([])
+  const [loading, setLoading] = useState(false)
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL // Ensure this environment variable is set
 
-  const [pendingList, setPendingList] = useState([
-    { id: 4, name: "New Student Mess", location: "East Wing", status: "pending", owner: "John Smith" },
-    { id: 5, name: "Campus Delight", location: "West Plaza", status: "pending", owner: "Sarah Johnson" },
-    { id: 6, name: "Quick Bites", location: "Central Courtyard", status: "pending", owner: "Mike Brown" },
-  ])
+  // Fetch mess data on component mount
+  useEffect(() => {
+    fetchMess()
+  }, [])
 
-  const handleVerification = (id, action) => {
-    if (action === "accept") {
-      const verifiedMess = pendingList.find((mess) => mess.id === id)
-      if (verifiedMess) {
-        setMessList([
-          ...messList,
-          {
-            ...verifiedMess,
-            status: "verified",
-            rating: 4.0,
+  const fetchMess = async () => {
+    setLoading(true)
+    try {
+      const res = await axios.get(`${BASE_URL}/mess/all`)
+      if (res.status === 200) {
+        setMessList(res.data.data)
+        toast.success("Mess data fetched successfully", {
+          duration: 3000,
+          style: {
+            background: "#10B981",
+            color: "#fff",
           },
-        ])
-        setPendingList(pendingList.filter((mess) => mess.id !== id))
+          iconTheme: {
+            primary: "#fff",
+            secondary: "#10B981",
+          },
+        })
+      } else {
+        toast.error("Error fetching mess data", {
+          duration: 4000,
+          style: {
+            background: "#EF4444",
+            color: "#fff",
+          },
+        })
       }
-    } else {
-      setPendingList(pendingList.filter((mess) => mess.id !== id))
+    } catch (error) {
+      console.error("Fetch error:", error)
+      toast.error("Something went wrong. Please try again later.", {
+        duration: 4000,
+        style: {
+          background: "#EF4444",
+          color: "#fff",
+        },
+      })
+    } finally {
+      setLoading(false)
     }
+  }
+
+  // Filter mess based on verification status
+  const getFilteredMess = (status) => {
+    return messList.filter((mess) => mess.isVerified === status)
+  }
+
+  const verifiedMess = getFilteredMess("verified")
+  const pendingMess = getFilteredMess("pending")
+  const rejectedMess = getFilteredMess("rejected")
+
+  const handleVerification = async (id, action) => {
+    // Find the mess item using its _id
+    const pendingMessItem = messList.find((mess) => mess._id === id)
+    if (!pendingMessItem) {
+      toast.error("Mess item not found.", {
+        duration: 2000,
+        style: { background: "#EF4444", color: "#fff" },
+      })
+      return
+    }
+
+    try {
+      setLoading(true)
+      // Determine the new status based on the action
+      const newStatus = action === "accept" ? "verified" : "rejected"
+
+      // Make API call to update verification status
+      const res = await axios.patch(`${BASE_URL}/mess/update/${id}`, {
+        // Corrected URL
+        isVerified: newStatus,
+      })
+
+      if (res.status === 200) {
+        // Update local state
+        setMessList((prevList) =>
+          prevList.map((mess) =>
+            mess._id === id // Use _id for comparison
+              ? {
+                  ...mess,
+                  isVerified: newStatus,
+                  // Optionally update rating or rejectionReason based on action
+                  rating: action === "accept" ? mess.rating || 4.0 : mess.rating, // Set default rating if accepted
+                  rejectionReason: action === "reject" ? "Application rejected by admin" : null,
+                }
+              : mess,
+          ),
+        )
+        // Show appropriate toast
+        if (action === "accept") {
+          toast.success(`${pendingMessItem.messName} has been verified successfully! ✅`, {
+            // Corrected to messName
+            duration: 4000,
+            style: {
+              background: "#10B981",
+              color: "#fff",
+            },
+            iconTheme: {
+              primary: "#fff",
+              secondary: "#10B981",
+            },
+          })
+        } else {
+          toast.error(`${pendingMessItem.messName} application has been rejected`, {
+            // Corrected to messName
+            duration: 4000,
+            style: {
+              background: "#EF4444",
+              color: "#fff",
+            },
+          })
+        }
+      } else {
+        toast.error(`Failed to update ${pendingMessItem.messName}. Server responded with status ${res.status}.`, {
+          duration: 4000,
+          style: { background: "#EF4444", color: "#fff" },
+        })
+      }
+    } catch (error) {
+      console.error("Verification error:", error)
+      toast.error("Failed to update verification status. Please try again.", {
+        duration: 4000,
+        style: {
+          background: "#EF4444",
+          color: "#fff",
+        },
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Show loading state
+  if (loading && messList.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-blue-700 text-lg">Loading mess data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -45,34 +172,44 @@ export default function MessPage() {
             <h1 className="text-3xl font-bold text-blue-900 mb-2">Mess Management</h1>
             <p className="text-blue-700">Manage and verify campus mess facilities</p>
           </div>
-          <button className="flex items-center bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all duration-200 hover:shadow-xl px-4 py-2 rounded-md">
-            <Plus className="w-4 h-4 mr-2" />
-            Add New Mess
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={fetchMess}
+              disabled={loading}
+              className="flex items-center bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all duration-200 hover:shadow-xl px-4 py-2 rounded-md disabled:opacity-50"
+            >
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              ) : (
+                <CheckCircle className="w-4 h-4 mr-2" />
+              )}
+              Refresh
+            </button>
+            
+          </div>
         </div>
-
         {/* Tabs */}
         <div className="w-full">
-          <div className="flex w-full max-w-md mb-8 bg-white shadow-sm border border-blue-100 rounded-md overflow-hidden">
+          <div className="flex w-full max-w-lg mb-8 bg-white shadow-sm border border-blue-100 rounded-md overflow-hidden">
             <button
               onClick={() => setActiveTab("messList")}
-              className={`flex-1 py-2 px-4 text-center ${activeTab === "messList" ? 'bg-blue-100 text-blue-800 shadow-sm' : 'text-gray-600'}`}
+              className={`flex-1 py-2 px-4 text-center text-sm ${activeTab === "messList" ? "bg-blue-100 text-blue-800 shadow-sm" : "text-gray-600"}`}
             >
-              Mess List
+              Verified ({verifiedMess.length})
             </button>
             <button
               onClick={() => setActiveTab("pendingVerification")}
-              className={`flex-1 py-2 px-4 text-center relative ${activeTab === "pendingVerification" ? 'bg-indigo-100 text-indigo-800 shadow-sm' : 'text-gray-600'}`}
+              className={`flex-1 py-2 px-4 text-center text-sm relative ${activeTab === "pendingVerification" ? "bg-indigo-100 text-indigo-800 shadow-sm" : "text-gray-600"}`}
             >
-              Pending Verification
-              {pendingList.length > 0 && (
-                <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs h-5 w-5 flex items-center justify-center rounded-full">
-                  {pendingList.length}
-                </span>
-              )}
+              Pending ({pendingMess.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("rejectedList")}
+              className={`flex-1 py-2 px-4 text-center text-sm ${activeTab === "rejectedList" ? "bg-red-100 text-red-800 shadow-sm" : "text-gray-600"}`}
+            >
+              Rejected ({rejectedMess.length})
             </button>
           </div>
-
           {/* Verified Mess List */}
           {activeTab === "messList" && (
             <div className="space-y-6">
@@ -80,52 +217,23 @@ export default function MessPage() {
                 <CheckCircle className="w-6 h-6 text-blue-600" />
                 <h2 className="text-2xl font-semibold text-blue-900">Verified Mess Facilities</h2>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {messList.map((mess) => (
-                  <div
-                    key={mess.id}
-                    className="group hover:shadow-xl transition-all duration-300 border border-blue-100 shadow-md bg-white/90 backdrop-blur-sm hover:-translate-y-1 hover:border-blue-200 rounded-lg overflow-hidden"
-                  >
-                    <div className="pb-3 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b border-blue-100">
-                      <div className="flex justify-between items-start">
-                        <h3 className="text-lg font-semibold text-blue-900 group-hover:text-blue-700 transition-colors">
-                          {mess.name}
-                        </h3>
-                        <span className="inline-flex items-center bg-blue-100 text-blue-800 border border-blue-200 shadow-sm px-2 py-1 rounded-full text-xs">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Verified
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="p-4 space-y-4">
-                      <div className="flex items-center text-blue-700">
-                        <MapPin className="w-4 h-4 mr-2 text-blue-500" />
-                        <span className="text-sm">{mess.location}</span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <Star className="w-4 h-4 text-amber-400 fill-current mr-1" />
-                          <span className="font-medium text-blue-800">{mess.rating}</span>
-                          <span className="text-blue-600 text-sm ml-1">rating</span>
-                        </div>
-
-                        <button
-                          className="flex items-center text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-all duration-200 px-2 py-1 rounded text-sm"
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View Details
-                        </button>
-                      </div>
-                    </div>
+              {verifiedMess.length === 0 ? (
+                <div className="border-dashed border-2 border-blue-200 bg-blue-50/50 rounded-lg">
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <CheckCircle className="w-12 h-12 text-blue-400 mb-4" />
+                    <p className="text-blue-700 text-lg font-medium">No verified mess facilities yet</p>
+                    <p className="text-blue-500 text-sm mt-1">Approve pending requests to see them here</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {verifiedMess.map((mess) => (
+                    <MessCard key={mess._id} mess={mess} status="verified" />
+                  ))}
+                </div>
+              )}
             </div>
           )}
-
           {/* Pending Verification */}
           {activeTab === "pendingVerification" && (
             <div className="space-y-6">
@@ -133,8 +241,7 @@ export default function MessPage() {
                 <XCircle className="w-6 h-6 text-indigo-600" />
                 <h2 className="text-2xl font-semibold text-blue-900">Pending Verification Requests</h2>
               </div>
-
-              {pendingList.length === 0 ? (
+              {pendingMess.length === 0 ? (
                 <div className="border-dashed border-2 border-blue-200 bg-blue-50/50 rounded-lg">
                   <div className="flex flex-col items-center justify-center py-12">
                     <CheckCircle className="w-12 h-12 text-blue-400 mb-4" />
@@ -144,52 +251,37 @@ export default function MessPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {pendingList.map((mess) => (
-                    <div
-                      key={mess.id}
-                      className="group hover:shadow-xl transition-all duration-300 border border-indigo-100 shadow-md bg-white/90 backdrop-blur-sm hover:-translate-y-1 hover:border-indigo-200 rounded-lg overflow-hidden"
-                    >
-                      <div className="pb-3 bg-gradient-to-r from-indigo-50 to-blue-50 p-4 border-b border-indigo-100">
-                        <div className="flex justify-between items-start">
-                          <h3 className="text-lg font-semibold text-blue-900 group-hover:text-indigo-700 transition-colors">
-                            {mess.name}
-                          </h3>
-                          <span className="inline-flex items-center bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-sm px-2 py-1 rounded-full text-xs">
-                            <XCircle className="w-3 h-3 mr-1" />
-                            Pending
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="p-4 space-y-4">
-                        <div className="flex items-center text-blue-700">
-                          <MapPin className="w-4 h-4 mr-2 text-blue-500" />
-                          <span className="text-sm">{mess.location}</span>
-                        </div>
-
-                        <div className="flex items-center text-blue-700">
-                          <User className="w-4 h-4 mr-2 text-blue-500" />
-                          <span className="text-sm">Owner: {mess.owner}</span>
-                        </div>
-
-                        <div className="flex gap-2 pt-2">
-                          <button
-                            onClick={() => handleVerification(mess.id, "accept")}
-                            className="flex-1 flex items-center justify-center bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-200 shadow-sm transition-all duration-200 hover:shadow-md py-2 px-4 rounded"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => handleVerification(mess.id, "reject")}
-                            className="flex-1 flex items-center justify-center bg-red-100 text-red-800 hover:bg-red-200 border border-red-200 shadow-sm transition-all duration-200 hover:shadow-md py-2 px-4 rounded"
-                          >
-                            <XCircle className="w-4 h-4 mr-1" />
-                            Reject
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                  {pendingMess.map((mess) => (
+                    <MessCard
+                      key={mess._id}
+                      mess={mess}
+                      status="pending"
+                      onVerification={handleVerification} // Pass the function here
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {/* Rejected List */}
+          {activeTab === "rejectedList" && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-6">
+                <XCircle className="w-6 h-6 text-red-600" />
+                <h2 className="text-2xl font-semibold text-blue-900">Rejected Applications</h2>
+              </div>
+              {rejectedMess.length === 0 ? (
+                <div className="border-dashed border-2 border-red-200 bg-red-50/50 rounded-lg">
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <CheckCircle className="w-12 h-12 text-red-400 mb-4" />
+                    <p className="text-red-700 text-lg font-medium">No rejected applications</p>
+                    <p className="text-red-500 text-sm mt-1">All applications have been approved</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {rejectedMess.map((mess) => (
+                    <MessCard key={mess._id} mess={mess} status="rejected" />
                   ))}
                 </div>
               )}

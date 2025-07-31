@@ -4,6 +4,9 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Lock, Eye, EyeOff, User, Phone, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
 
 export default function RegisterPage() {
   const [registerData, setRegisterData] = useState({
@@ -16,7 +19,8 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [touchedFields, setTouchedFields] = useState({});
-
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+  const router = useRouter();
   // Registration handlers
   const validateField = (name, value) => {
     switch (name) {
@@ -36,7 +40,7 @@ export default function RegisterPage() {
 
   const handleRegisterChange = (e) => {
     const { name, value } = e.target
-    
+
     if (name === "contact") {
       const digitsOnly = value.replace(/\D/g, '')
       if (digitsOnly.length > 10) return
@@ -62,22 +66,72 @@ export default function RegisterPage() {
     e.preventDefault()
     setIsLoading(true)
 
-    const newErrors = {}
-    Object.keys(registerData).forEach((key) => {
-      const error = validateField(key, registerData[key])
-      if (error) newErrors[key] = error
-    })
+    try {
+      const newErrors = {}
+      Object.keys(registerData).forEach((key) => {
+        const error = validateField(key, registerData[key])
+        if (error) newErrors[key] = error
+      })
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      setTouchedFields(Object.keys(registerData).reduce((acc, key) => ({ ...acc, [key]: true }), {}))
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors)
+        setTouchedFields(Object.keys(registerData).reduce((acc, key) => ({ ...acc, [key]: true }), {}))
+        toast.error('Please fix the validation errors before submitting')
+        setIsLoading(false)
+        return
+      }
+
+      // Simulate API call (replace with actual API call)
+      const res = await axios.post(`${BASE_URL}/admin/register`, registerData);
+
+      // Dismiss loading toast
+      
+
+      // Success toast
+      if (res.status == 200) {
+        toast.success('Account created successfully! Welcome aboard! 🎉', {
+          duration: 4000,
+          style: {
+            background: '#10B981',
+            color: '#fff',
+          },
+          iconTheme: {
+            primary: '#fff',
+            secondary: '#10B981',
+          },
+        })
+        setTimeout(() => router.push("/login"), 4000);
+      } else {
+        toast.error('Error during register')
+      }
+
+      console.log("Registered:", registerData)
+
+      // Reset form on success
+      setRegisterData({
+        name: "",
+        contact: "",
+        email: "",
+        password: "",
+      })
+      setTouchedFields({})
+      setErrors({})
+
       setIsLoading(false)
-      return
-    }
+    } catch (err) {
+      console.error('Registration error:', err)
 
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    console.log("Registered:", registerData)
-    setIsLoading(false)
+      // Error toast
+      toast.error('Registration failed. Please try again.', {
+        duration: 4000,
+        style: {
+          background: '#EF4444',
+          color: '#fff',
+        },
+      })
+
+      setIsLoading(false)
+    }
   }
 
   const containerVariants = {
@@ -111,12 +165,27 @@ export default function RegisterPage() {
     return touchedFields[fieldName] && !errors[fieldName] && registerData[fieldName]
   }
 
+  // Show toast when field validation passes for the first time
+  const handleFieldValidation = (fieldName, isValid) => {
+    if (isValid && !isFieldValid(fieldName)) {
+      const fieldDisplayName = fieldName === 'contact' ? 'Contact Number' : fieldName.charAt(0).toUpperCase() + fieldName.slice(1)
+      toast.success(`${fieldDisplayName} looks good! ✓`, {
+        duration: 2000,
+        style: {
+          background: '#059669',
+          color: '#fff',
+          fontSize: '14px',
+        },
+      })
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white">
       {/* Left side with image */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-8">
         <div className="max-w-md ml-24 flex flex-col items-center">
-          <Image 
+          <Image
             src="/images/login.png"
             alt="Login Illustration"
             width={300}
@@ -125,7 +194,7 @@ export default function RegisterPage() {
           />
           <div className="mt-8 text-center p-4 rounded-lg">
             <div className="flex justify-center mb-2">
-              <Image 
+              <Image
                 src="/images/livmeal.png"
                 alt="LivMedI Logo"
                 width={200}
@@ -143,9 +212,9 @@ export default function RegisterPage() {
           <h1 className="text-3xl font-bold text-gray-800 mb-6">
             Admin Registration
           </h1>
-          
-          <motion.form 
-            onSubmit={handleRegister} 
+
+          <motion.form
+            onSubmit={handleRegister}
             className="space-y-4"
             variants={containerVariants}
             initial="hidden"
@@ -164,9 +233,8 @@ export default function RegisterPage() {
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Icon
-                        className={`h-4 w-4 ${
-                          isValid ? "text-green-500" : hasError ? "text-red-500" : "text-gray-500"
-                        }`}
+                        className={`h-4 w-4 ${isValid ? "text-green-500" : hasError ? "text-red-500" : "text-gray-500"
+                          }`}
                       />
                     </div>
                     <input
@@ -188,13 +256,12 @@ export default function RegisterPage() {
                       onChange={handleRegisterChange}
                       onBlur={handleBlur}
                       maxLength={fieldName === "contact" ? 10 : undefined}
-                      className={`w-full px-4 py-3 pl-10 pr-10 text-sm text-gray-800 border rounded-lg focus:outline-none focus:ring-1 bg-white ${
-                        isValid
-                          ? "border-green-500 focus:ring-green-500"
-                          : hasError
-                            ? "border-red-500 focus:ring-red-500"
-                            : "border-gray-700 focus:ring-blue-500"
-                      }`}
+                      className={`w-full px-4 py-3 pl-10 pr-10 text-sm text-gray-800 border rounded-lg focus:outline-none focus:ring-1 bg-white ${isValid
+                        ? "border-green-500 focus:ring-green-500"
+                        : hasError
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-gray-700 focus:ring-blue-500"
+                        }`}
                       required
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
