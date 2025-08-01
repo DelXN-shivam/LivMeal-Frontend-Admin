@@ -64,13 +64,13 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       {/* Sidebar */}
       <div
         className={`
-          w-64 bg-gradient-to-b from-indigo-50 to-white min-h-screen border-r border-gray-200
+          w-64 bg-white min-h-screen border-r border-indigo-200
           fixed inset-y-0 left-0 z-50 transform transition-transform duration-300
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
         <div className="p-6 pb-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-indigo-800 flex items-center">
+          <h1 className="text-2xl font-bold text-indigo-900 flex items-center">
             
               <img className="mr-2 mt-1" height={35} width={35} src = "/images/logo.png" />
             
@@ -86,8 +86,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   href={item.href}
                   className={`flex items-center p-3 rounded-lg transition-all duration-200 ${
                     pathname === item.href
-                      ? "bg-indigo-100 text-indigo-700 shadow-sm font-medium"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                      ? "bg-white/80 shadow-sm font-medium"
+                      : "text-black hover:bg-white/50 hover:text-indigo-900"
                   }`}
                   onClick={() => isMobile && setIsOpen(false)}
                 >
@@ -96,7 +96,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   </span>
                   {item.name}
                   {pathname === item.href && (
-                    <span className="ml-auto w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+                    <span className="ml-auto w-2 h-2 bg-indigo-600 rounded-full animate-pulse"></span>
                   )}
                 </Link>
               </li>
@@ -104,12 +104,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           </ul>
         </nav>
         
-        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200">
+        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-indigo-200">
           <div className="flex items-center">
-            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3">👤</div>
+            <div className="w-10 h-10 rounded-full bg-indigo-200 flex items-center justify-center mr-3 text-indigo-800">👤</div>
             <div>
-              <p className="font-medium text-gray-800">Admin User</p>
-              <p className="text-xs text-gray-500">Administrator</p>
+              <p className="font-medium text-indigo-900">Admin User</p>
+              <p className="text-xs text-indigo-700">Administrator</p>
             </div>
           </div>
         </div>
