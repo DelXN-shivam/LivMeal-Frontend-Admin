@@ -9,11 +9,12 @@ import { Menu, X } from "lucide-react"
 export default function Sidebar({ isOpen, setIsOpen }) {
   const pathname = usePathname()
   const [isMobile, setIsMobile] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const navItems = [
     { name: "Dashboard", href: "/admin", icon: "📊" },
     { name: "Mess", href: "/admin/mess", icon: "🍽️" },
-    { name: "Settings", href: "/admin/settings", icon: "⚙️" },
+    { name: "Settings", href: "/admin/settings", icon: "⚙️", hasSubmenu: true },
   ]
 
   useEffect(() => {
@@ -34,6 +35,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen)
+  }
+
+  const toggleSettings = () => {
+    setSettingsOpen(!settingsOpen)
   }
 
   return (
@@ -82,23 +87,62 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           <ul>
             {navItems.map((item) => (
               <li key={item.name} className="mb-1">
-                <Link
-                  href={item.href}
-                  className={`flex items-center p-3 rounded-lg transition-all duration-200 ${
-                    pathname === item.href
-                      ? "bg-white/80 shadow-sm font-medium"
-                      : "text-black hover:bg-white/50 hover:text-indigo-900"
-                  }`}
-                  onClick={() => isMobile && setIsOpen(false)}
-                >
-                  <span className={`mr-3 text-lg transition-transform ${pathname === item.href ? "scale-110" : ""}`}>
-                    {item.icon}
-                  </span>
-                  {item.name}
-                  {pathname === item.href && (
-                    <span className="ml-auto w-2 h-2 bg-indigo-600 rounded-full animate-pulse"></span>
-                  )}
-                </Link>
+                {item.hasSubmenu ? (
+                  <div>
+                    <button
+                      onClick={toggleSettings}
+                      className={`flex items-center justify-between w-full p-3 rounded-lg transition-all duration-200 ${
+                        pathname.startsWith(item.href)
+                          ? "bg-white/80 shadow-sm font-medium"
+                          : "text-black hover:bg-white/50 hover:text-indigo-900"
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <span className={`mr-3 text-lg transition-transform ${pathname.startsWith(item.href) ? "scale-110" : ""}`}>
+                          {item.icon}
+                        </span>
+                        {item.name}
+                      </div>
+                      <span className={`transform transition-transform ${settingsOpen ? 'rotate-90' : ''}`}>›</span>
+                    </button>
+                    {settingsOpen && (
+                      <div className="ml-8 mt-1 mb-2">
+                        <Link
+                          href="/admin/settings/adminconfig"
+                          className={`flex items-center p-2 rounded-lg text-sm transition-all duration-200 ${
+                            pathname === "/admin/settings/adminconfig"
+                              ? "bg-indigo-100 text-indigo-900 font-medium"
+                              : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-800"
+                          }`}
+                          onClick={() => isMobile && setIsOpen(false)}
+                        >
+                          Admin Config
+                          {pathname === "/admin/settings/adminconfig" && (
+                            <span className="ml-auto w-2 h-2 bg-indigo-600 rounded-full animate-pulse"></span>
+                          )}
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className={`flex items-center p-3 rounded-lg transition-all duration-200 ${
+                      pathname === item.href
+                        ? "bg-white/80 shadow-sm font-medium"
+                        : "text-black hover:bg-white/50 hover:text-indigo-900"
+                    }`}
+                    onClick={() => isMobile && setIsOpen(false)}
+                  >
+                    <span className={`mr-3 text-lg transition-transform ${pathname === item.href ? "scale-110" : ""}`}>
+                      {item.icon}
+                    </span>
+                    {item.name}
+                    {pathname === item.href && (
+                      <span className="ml-auto w-2 h-2 bg-indigo-600 rounded-full animate-pulse"></span>
+                    )}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

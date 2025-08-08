@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { MapPin, CheckCircle, XCircle, AlertTriangle, User, Phone, Mail, Clock, DollarSign } from "lucide-react"
+import Image from "next/image"
+import { MapPin, CheckCircle, XCircle, AlertTriangle, User, Phone, Mail, Clock, DollarSign, Star } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 export default function MessCard({ mess, status, onVerification }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -38,7 +40,7 @@ export default function MessCard({ mess, status, onVerification }) {
           badgeBg: "bg-indigo-100",
           badgeText: "text-indigo-800",
           badgeBorder: "border-indigo-200",
-          icon: null, // Changed from XCircle to null
+          icon: null,
           label: "Pending",
         }
       case "rejected":
@@ -69,12 +71,10 @@ export default function MessCard({ mess, status, onVerification }) {
   }
   const config = getStatusConfig()
   const StatusIcon = config.icon
-  const subscription = mess?.subscription?.[0]
 
   return (
     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
       <DialogTrigger asChild>
-        {/* The entire card is the trigger for the modal */}
         <div
           className={`group hover:shadow-xl transition-all duration-300 border ${config.borderColor} shadow-md bg-white/90 backdrop-blur-sm hover:-translate-y-1 ${config.hoverBorder} rounded-lg overflow-hidden cursor-pointer max-w-sm`}
         >
@@ -91,25 +91,24 @@ export default function MessCard({ mess, status, onVerification }) {
               </span>
             </div>
           </div>
-          {/* Reverted to original padding and removed scrollbar for the card */}
           <div className="p-4 space-y-3">
             {/* Address */}
             <div className="flex items-start text-blue-700">
               <MapPin className="w-4 h-4 mr-2 text-blue-500 mt-0.5 flex-shrink-0" />
-              <span className="text-sm leading-relaxed">{mess?.messAddress}</span>
+              <span className="text-sm leading-relaxed">{mess?.address}</span>
             </div>
             {/* Owner for pending/rejected status */}
-            {(status === "pending" || status === "rejected") && mess?.messOwnerName && (
+            {(status === "pending" || status === "rejected") && mess?.ownerName && (
               <div className="flex items-center text-blue-700">
                 <User className="w-4 h-4 mr-2 text-blue-500" />
-                <span className="text-sm">Owner: {mess?.messOwnerName}</span>
+                <span className="text-sm">Owner: {mess?.ownerName}</span>
               </div>
             )}
             {/* Contact for pending/rejected status */}
-            {(status === "pending" || status === "rejected") && mess?.contact && (
+            {(status === "pending" || status === "rejected") && mess?.mobile && (
               <div className="flex items-center text-blue-700">
                 <Phone className="w-4 h-4 mr-2 text-blue-500" />
-                <span className="text-sm">{mess?.contact}</span>
+                <span className="text-sm">{mess?.mobile}</span>
               </div>
             )}
             {/* Email for pending/rejected status */}
@@ -122,7 +121,7 @@ export default function MessCard({ mess, status, onVerification }) {
             {/* Meal Types */}
             <div className="flex items-center text-blue-700">
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                {mess?.mealTypes === "both" ? "Veg & Non-Veg" : mess?.mealTypes}
+                {mess?.messType === "both" ? "Veg & Non-Veg" : mess?.messType}
               </span>
               {mess?.deliveryAvailable && (
                 <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full ml-2">
@@ -130,81 +129,29 @@ export default function MessCard({ mess, status, onVerification }) {
                 </span>
               )}
             </div>
-            {/* Subscription pricing for verified status */}
-            {status === "verified" && subscription && (
-              <div className="bg-blue-50 border border-blue-200 rounded p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <DollarSign className="w-4 h-4 text-blue-600 mr-1" />
-                    <span className="text-sm font-medium text-blue-800">Monthly: ₹{subscription.monthlyMealPrice}</span>
-                  </div>
-                  <span className="text-xs text-blue-600">Daily: ₹{subscription.dailyMealPrice}</span>
-                </div>
-                {subscription.onGoingDiscount && subscription.discountOffer && (
-                  <div className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">
-                    🎉 {subscription.discountOffer}
-                  </div>
-                )}
-              </div>
-            )}
-            {/* Mess timings for verified status */}
-            {status === "verified" && mess?.messTimings && (
-              <div className="bg-gray-50 border border-gray-200 rounded p-3">
-                <div className="flex items-center mb-2">
-                  <Clock className="w-4 h-4 text-gray-600 mr-1" />
-                  <span className="text-sm font-medium text-gray-800">Meal Timings</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  {mess?.messTimings.breakfast && (
-                    <div className="text-center">
-                      <div className="text-gray-600">Breakfast</div>
-                      <div className="text-gray-800 font-medium">
-                        {mess?.messTimings.breakfast.from} - {mess?.messTimings.breakfast.to}
-                      </div>
-                    </div>
-                  )}
-                  {mess?.messTimings.lunch && (
-                    <div className="text-center">
-                      <div className="text-gray-600">Lunch</div>
-                      <div className="text-gray-800 font-medium">
-                        {mess?.messTimings.lunch.from} - {mess?.messTimings.lunch.to}
-                      </div>
-                    </div>
-                  )}
-                  {mess?.messTimings.dinner && (
-                    <div className="text-center">
-                      <div className="text-gray-600">Dinner</div>
-                      <div className="text-gray-800 font-medium">
-                        {mess?.messTimings.dinner.from} - {mess?.messTimings.dinner.to}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
             {/* Action buttons for pending status - moved back inside */}
             {status === "pending" && onVerification && (
               <div className="flex gap-2 pt-2">
-                <button
+                <Button
                   onClick={(e) => {
                     e.stopPropagation()
                     onVerification(mess?._id, "accept")
-                  }} // Stop propagation to prevent modal from opening
+                  }}
                   className="flex-1 flex items-center justify-center bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-200 shadow-sm transition-all duration-200 hover:shadow-md py-2 px-4 rounded"
                 >
                   <CheckCircle className="w-4 h-4 mr-1" />
                   Accept
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={(e) => {
                     e.stopPropagation()
                     onVerification(mess?._id, "reject")
-                  }} // Stop propagation
+                  }}
                   className="flex-1 flex items-center justify-center bg-red-100 text-red-800 hover:bg-red-200 border border-red-200 shadow-sm transition-all duration-200 hover:shadow-md py-2 px-4 rounded"
                 >
                   <XCircle className="w-4 h-4 mr-1" />
                   Reject
-                </button>
+                </Button>
               </div>
             )}
             {/* Show reason for rejected status (if available) */}
@@ -225,20 +172,21 @@ export default function MessCard({ mess, status, onVerification }) {
           <DialogDescription className="text-gray-600">Detailed information about {mess?.messName}.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          {/* Basic Info */}
           <div className="flex items-start gap-2">
             <MapPin className="w-5 h-5 text-blue-500 flex-shrink-0 mt-1" />
-            <p className="text-gray-700 text-base">{mess?.messAddress}</p>
+            <p className="text-gray-700 text-base">{mess?.address}</p>
           </div>
-          {mess?.messOwnerName && (
+          {mess?.ownerName && (
             <div className="flex items-center gap-2">
               <User className="w-5 h-5 text-blue-500" />
-              <p className="text-gray-700 text-base">Owner: {mess?.messOwnerName}</p>
+              <p className="text-gray-700 text-base">Owner: {mess?.ownerName}</p>
             </div>
           )}
-          {mess?.contact && (
+          {mess?.mobile && (
             <div className="flex items-center gap-2">
               <Phone className="w-5 h-5 text-blue-500" />
-              <p className="text-gray-700 text-base">Contact: {mess?.contact}</p>
+              <p className="text-gray-700 text-base">Contact: {mess?.mobile}</p>
             </div>
           )}
           {mess?.email && (
@@ -249,42 +197,48 @@ export default function MessCard({ mess, status, onVerification }) {
           )}
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-              {mess?.mealTypes === "both" ? "Veg & Non-Veg" : mess?.mealTypes}
+              {mess?.messType === "both" ? "Veg & Non-Veg" : mess?.messType}
             </Badge>
             {mess?.deliveryAvailable && (
               <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
                 Delivery Available
               </Badge>
             )}
+            {mess?.serviceRadius && (
+              <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
+                Service Radius: {mess.serviceRadius} km
+              </Badge>
+            )}
           </div>
 
-          {mess?.messTimings && (
+          {/* Meal Timings */}
+          {(mess?.breakfastTimings || mess?.lunchTimings || mess?.dinnerTimings) && (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
                 <Clock className="w-5 h-5 text-gray-600 mr-2" /> Meal Timings
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                {mess?.messTimings.breakfast && (
+                {mess?.breakfastTimings && (
                   <div className="bg-white p-3 rounded-md border border-gray-100 shadow-sm">
                     <div className="text-gray-600 font-medium">Breakfast</div>
                     <div className="text-gray-800">
-                      {mess?.messTimings.breakfast.from} - {mess?.messTimings.breakfast.to}
+                      {mess.breakfastTimings.start} - {mess.breakfastTimings.end}
                     </div>
                   </div>
                 )}
-                {mess?.messTimings.lunch && (
+                {mess?.lunchTimings && (
                   <div className="bg-white p-3 rounded-md border border-gray-100 shadow-sm">
                     <div className="text-gray-600 font-medium">Lunch</div>
                     <div className="text-gray-800">
-                      {mess?.messTimings.lunch.from} - {mess?.messTimings.lunch.to}
+                      {mess.lunchTimings.start} - {mess.lunchTimings.end}
                     </div>
                   </div>
                 )}
-                {mess?.messTimings.dinner && (
+                {mess?.dinnerTimings && (
                   <div className="bg-white p-3 rounded-md border border-gray-100 shadow-sm">
                     <div className="text-gray-600 font-medium">Dinner</div>
                     <div className="text-gray-800">
-                      {mess?.messTimings.dinner.from} - {mess?.messTimings.dinner.to}
+                      {mess.dinnerTimings.start} - {mess.dinnerTimings.end}
                     </div>
                   </div>
                 )}
@@ -292,37 +246,111 @@ export default function MessCard({ mess, status, onVerification }) {
             </div>
           )}
 
-          {subscription && (
+          {/* Subscription Plans */}
+          {mess?.subscriptionPlans && mess.subscriptionPlans.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
               <h4 className="text-lg font-semibold text-blue-800 mb-2 flex items-center">
                 <DollarSign className="w-5 h-5 text-blue-600 mr-2" /> Subscription Plans
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                <div className="bg-white p-3 rounded-md border border-blue-100 shadow-sm">
-                  <div className="text-blue-600 font-medium">Daily Meal Price</div>
-                  <div className="text-blue-800">₹{subscription.dailyMealPrice}</div>
-                </div>
-                <div className="bg-white p-3 rounded-md border border-blue-100 shadow-sm">
-                  <div className="text-blue-600 font-medium">Weekly Meal Price</div>
-                  <div className="text-blue-800">₹{subscription.weeklyMealPrice}</div>
-                </div>
-                <div className="bg-white p-3 rounded-md border border-blue-100 shadow-sm">
-                  <div className="text-blue-600 font-medium">Monthly Meal Price</div>
-                  <div className="text-blue-800">₹{subscription.monthlyMealPrice}</div>
-                </div>
-                <div className="bg-white p-3 rounded-md border border-blue-100 shadow-sm">
-                  <div className="text-blue-600 font-medium">Trial Meal Price</div>
-                  <div className="text-blue-800">₹{subscription.trialMealPrice}</div>
-                </div>
+                {mess.subscriptionPlans.map((plan) => (
+                  <div key={plan._id} className="bg-white p-3 rounded-md border border-blue-100 shadow-sm">
+                    <div className="text-blue-600 font-medium capitalize">{plan.name} Plan</div>
+                    <div className="text-blue-800">₹{plan.price}</div>
+                    {plan.onGoingDiscount && plan.discountOffer && (
+                      <div className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded mt-1">
+                        🎉 {plan.discountOffer}% Discount
+                      </div>
+                    )}
+                    {plan.description && (
+                      <p className="text-gray-500 text-xs mt-1">{plan.description}</p>
+                    )}
+                  </div>
+                ))}
               </div>
-              {subscription.onGoingDiscount && subscription.discountOffer && (
-                <div className="text-sm text-green-700 bg-green-100 px-3 py-2 rounded-md border border-green-200 flex items-center">
-                  🎉 <span className="ml-2 font-medium">Special Offer:</span> {subscription.discountOffer}
-                </div>
-              )}
             </div>
           )}
 
+          {/* Photos Section */}
+          {mess?.photos && mess.photos.length > 0 && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                <Image
+                  src="/icon.svg" // Replace with your actual icon
+                  width={20}
+                  height={20}
+                  alt="Photo icon"
+                  className="w-5 h-5 text-gray-600 mr-2"
+                />
+                Photos
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {mess.photos.map((photo) => (
+                  <div key={photo._id} className="relative aspect-square overflow-hidden rounded-md">
+                    {(photo.url && photo.url !== '') ? (
+                      <Image
+                        src={photo.url}
+                        alt={`Photo of ${mess.messName}`}
+                        layout="fill"
+                        objectFit="cover"
+                        className="hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <Image
+                        src="/placeholder." // Make sure this file exists in your public/ folder
+                        alt="Placeholder.png"
+                        layout="fill"
+                        objectFit="cover"
+                        className="hover:scale-105 transition-transform duration-300"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+
+          {/* Reviews Section */}
+          {mess?.reviews && mess.reviews.length > 0 && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                <Star className="w-5 h-5 text-yellow-500 mr-2" /> Reviews
+              </h4>
+              <div className="space-y-4">
+                {mess.reviews.map((review) => (
+                  <div key={review._id} className="bg-white p-3 rounded-md border border-gray-100 shadow-sm">
+                    <div className="flex items-center mb-2">
+                      {review.imgUrl && (
+                        <Image
+                          src={review.imgUrl || "/placeholder.svg"}
+                          alt={review.name}
+                          width={32}
+                          height={32}
+                          className="rounded-full mr-2 object-cover"
+                        />
+                      )}
+                      <div>
+                        <p className="font-medium text-gray-800">{review.name}</p>
+                        <div className="flex items-center text-sm text-yellow-500">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className={`w-4 h-4 ${i < review.rating ? "fill-current" : "text-gray-300"}`} />
+                          ))}
+                          <span className="ml-1 text-gray-600">({review.rating}/5)</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-gray-700 text-sm">{review.description}</p>
+                    <p className="text-gray-500 text-xs mt-2">
+                      Reviewed on: {new Date(review.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Rejection Reason */}
           {mess?.rejectionReason && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <h4 className="text-lg font-semibold text-red-800 mb-2 flex items-center">
@@ -338,5 +366,3 @@ export default function MessCard({ mess, status, onVerification }) {
     </Dialog>
   )
 }
-
-

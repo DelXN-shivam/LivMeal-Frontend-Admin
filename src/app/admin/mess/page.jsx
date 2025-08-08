@@ -1,16 +1,18 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Plus, CheckCircle, XCircle } from "lucide-react"
+import { Plus, CheckCircle, XCircle } from 'lucide-react'
 import toast from "react-hot-toast"
 import MessCard from "@/components/MessCard"
 import axios from "axios"
+import { Button } from "@/components/ui/button" // Added Button import
 
 export default function MessPage() {
   const [activeTab, setActiveTab] = useState("messList")
   const [messList, setMessList] = useState([])
   const [loading, setLoading] = useState(false)
   const hasFetched = useRef(false)
+
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL // Ensure this environment variable is set
 
   // Fetch mess data on component mount
@@ -62,18 +64,14 @@ export default function MessPage() {
   }
 
   // Filter mess based on verification status
-  const getFilteredMess = (status) => {
-    return messList.filter((mess) => mess.isVerified === status)
-  }
-
-  const verifiedMess = getFilteredMess("verified")
-  const pendingMess = getFilteredMess("pending")
-  const rejectedMess = getFilteredMess("rejected")
+  const verifiedMess = messList.filter((mess) => mess.isVerified === "verified")
+  const pendingMess = messList.filter((mess) => mess.isVerified === "pending")
+  const rejectedMess = messList.filter((mess) => mess.isVerified === "rejected")
 
   const handleVerification = async (id, action) => {
     // Find the mess item using its _id
-    const pendingMessItem = messList.find((mess) => mess._id === id)
-    if (!pendingMessItem) {
+    const messItem = messList.find((mess) => mess._id === id)
+    if (!messItem) {
       toast.error("Mess item not found.", {
         duration: 2000,
         style: { background: "#EF4444", color: "#fff" },
@@ -84,33 +82,31 @@ export default function MessPage() {
     try {
       setLoading(true)
       // Determine the new status based on the action
-      const newStatus = action === "accept" ? "verified" : "rejected"
+      const newIsVerifiedStatus = action === "accept" ? "verified" : "rejected"
+      const newRejectionReason = action === "reject" ? "Application rejected by admin" : null
 
       // Make API call to update verification status
       const res = await axios.patch(`${BASE_URL}/mess/update/${id}`, {
-        // Corrected URL
-        isVerified: newStatus,
+        isVerified: newIsVerifiedStatus,
+        rejectionReason: newRejectionReason,
       })
 
       if (res.status === 200) {
         // Update local state
         setMessList((prevList) =>
           prevList.map((mess) =>
-            mess._id === id // Use _id for comparison
+            mess._id === id
               ? {
-                ...mess,
-                isVerified: newStatus,
-                // Optionally update rating or rejectionReason based on action
-                rating: action === "accept" ? mess.rating || 4.0 : mess.rating, // Set default rating if accepted
-                rejectionReason: action === "reject" ? "Application rejected by admin" : null,
-              }
+                  ...mess,
+                  isVerified: newIsVerifiedStatus,
+                  rejectionReason: newRejectionReason,
+                }
               : mess,
           ),
         )
         // Show appropriate toast
         if (action === "accept") {
-          toast.success(`${pendingMessItem.messName} has been verified successfully! ✅`, {
-            // Corrected to messName
+          toast.success(`${messItem.messName} has been verified successfully! ✅`, {
             duration: 4000,
             style: {
               background: "#10B981",
@@ -122,8 +118,7 @@ export default function MessPage() {
             },
           })
         } else {
-          toast.error(`${pendingMessItem.messName} application has been rejected`, {
-            // Corrected to messName
+          toast.error(`${messItem.messName} application has been rejected`, {
             duration: 4000,
             style: {
               background: "#EF4444",
@@ -132,7 +127,7 @@ export default function MessPage() {
           })
         }
       } else {
-        toast.error(`Failed to update ${pendingMessItem.messName}. Server responded with status ${res.status}.`, {
+        toast.error(`Failed to update ${messItem.messName}. Server responded with status ${res.status}.`, {
           duration: 4000,
           style: { background: "#EF4444", color: "#fff" },
         })
@@ -177,7 +172,7 @@ export default function MessPage() {
             <p className="text-blue-700">Manage and verify campus mess facilities</p>
           </div>
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={fetchMess}
               disabled={loading}
               className="flex items-center bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all duration-200 hover:shadow-xl px-4 py-2 rounded-md disabled:opacity-50"
@@ -188,8 +183,7 @@ export default function MessPage() {
                 <CheckCircle className="w-4 h-4 mr-2" />
               )}
               Refresh
-            </button>
-
+            </Button>
           </div>
         </div>
         {/* Tabs */}
